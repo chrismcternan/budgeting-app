@@ -1,2 +1,7 @@
+# Unused
 run.bat
 ip_config.txt
+__pycache__
+
+# Ledger files saved here (don't upload!!)
+ledgers/
