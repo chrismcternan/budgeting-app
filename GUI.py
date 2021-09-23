@@ -46,7 +46,7 @@ class CreateLedgerWindow():
             # sets new active ledger and calls create function
             new_ledger = create_ledger(new_filename, ledger_data.ledgers)
             ledger_data.ledgers.append(new_ledger)  # updates ledger list to include new ledger
-            ledger_data.update(new_filename)   # updates to active ledger on creation
+            ledger_data.update(new_ledger.name)   # updates to active ledger on creation
         new_ledger_entry = tk.Entry(window, textvariable=filename).pack()
         submit_bt = tk.Button(
             window,
@@ -65,12 +65,11 @@ class SelectLedgerWindow():
         filename = tk.StringVar(window)
         def submit(filename):
             window.destroy()
-            # active_ledger = ledgers(name=filename)
-            # print (filename.get())
             active_ledger = filename.get()
             ledger_data.update(active_ledger)
 
         # set up window objects 
+        # checks if any ledger data exists, if not, prompts to create one
         try:
             if len(ledger_data.ledgers) < 1:
                 raise MissingLedgersError
@@ -86,6 +85,15 @@ class SelectLedgerWindow():
             window.destroy()
             CreateLedgerWindow()
             print ("No ledgers, please create a new ledger")
+        def create_bt_cmd():
+            # command for create_bt Button instance
+            window.destroy()
+            CreateLedgerWindow()
+        create_bt = tk.Button(
+            window,
+            text = 'Create New',
+            command = create_bt_cmd
+        ).pack()
 
 
 class ApplicationWindow():
