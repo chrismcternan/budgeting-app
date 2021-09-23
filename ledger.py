@@ -4,7 +4,7 @@ import os
 
 
 # Set up ledgers directory
-dir_name = "ledgers"
+dir_name = "data\\ledgers"
 parent_dir = os.getcwd()
 ledger_dir = os.path.join(parent_dir, dir_name)
 if not os.path.isdir(ledger_dir):
@@ -42,6 +42,7 @@ class TransactionDatabase():
 
     def download(self, *args, **kwargs):
         # download data to dataframe
+        # don't know if this will be useful
         print(self.ledger_df.head(5))
 
     def save(self, *args, **kwargs):
@@ -55,10 +56,9 @@ class TransactionDatabase():
 
         with open(file_name) as f:
             upload_df = pd.read_csv(f, header=0)
-        """clean data to match headers so it can be merged with csv
+        """parse data to match headers so it can be merged with csv
         with different formatting"""
-        # clean amount charged
-        print (upload_df.head(5))
+        # cleans amount charged
         if "Amount" not in upload_df.columns:
             # if no amount column, create new column
             # for statements that use debit/credit columns
@@ -67,6 +67,11 @@ class TransactionDatabase():
             new_amount = upload_df["Credit"] - upload_df["Debit"]
             upload_df["Amount"] = new_amount
             print (upload_df.head(5))
+        # changes 'category' to 'MCC' for clearer ledger columns
+        upload_df.rename(columns={"Category": "MCC"})
+        # either set credit card account or allow entry
+        # cleans unused columns
+
         # Merge cleaned data with ledger_df
         for col in upload_df.columns:
             if col in self.cleaned_header:
@@ -78,11 +83,12 @@ class TransactionDatabase():
         print("Ledger '" + name + "' initialized.")
 
     def __str__(self):
-        return self.name    # set name of objects
-
+        return self.name    # set name of objects, don't think it does anything
 
 def init_ledgers():
+    '''defines functions to initialize ledgers based on found files'''
     ledgers = []
+    active_ledger = None
     for file in os.listdir(ledger_dir):
         ledgers.append(TransactionDatabase(name = file))
     return ledgers
@@ -105,17 +111,15 @@ def create_ledger(filename, ledgers):
         filepath = os.path.join(ledger_dir, filename)
         with open(filepath, 'w+') as fp:
             pass
-        # appends new ledger object to ledgers and returns
-        new_ledger = TransactionDatabase(name = filename)
-        ledgers.append(new_ledger)
-        return new_ledger
+        return TransactionDatabase(name = filename)
 
 def select_ledger():
-        file_name = filedialog.askopenfilename()
-        # Check if valid file then create dataframe of data
+    '''no longer being used'''
+    file_name = filedialog.askopenfilename()
+    # Check if valid file then create dataframe of data
 
-        with open(file_name) as f:
-            df = pd.read_csv(f, header=0)
+    with open(file_name) as f:
+        df = pd.read_csv(f, header=0)
 
 def main():
     pass

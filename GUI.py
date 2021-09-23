@@ -6,31 +6,47 @@ from ledger import *
 
 
 # initialize GUI Errors
-class NoLedgersError(Error):
-    # raises when there are no ledgers, and one must be created
+class MissingLedgersError(Exception):
+    '''Raises if no ledgers are present'''
     pass
 
+# initialize ledgers and ActiveLedger class to pass active_ledger
+class ActiveLedger():
+    def __init__(self):
+        self.active_ledger = None
+        self.ledgers = init_ledgers()
+    
+    def update(self, active_ledger):
+        # changes active_ledger
+        self.active_ledger = active_ledger
+        print("'" + active_ledger + "' selected as active ledger")
+    
+    def return_ledger(self):
+        # matches ledgers to active ledger and returns instance and methods
+        for ledger in self.ledgers:
+            if ledger.name == self.active_ledger:
+                return ledger
 
-# initialize ledgers and open ledger selection window
-ledgers = init_ledgers()
-active_ledger = None      # default active_ledger
+ledger_data = ActiveLedger()   # creates instance to change active ledger
 
 
 # initializes class for tk window for creating new ledger
 class CreateLedgerWindow():
     def __init__(self):
+        # creates window with settings
         window = tk.Toplevel()
         window.geometry("400x300")
         label = tk.Label(window, text = "Enter a name for new ledger").pack()
 
-        # create submit function for new ledger
+        # creates submit function for new ledger
         filename = tk.StringVar()
         def submit(filename):
             new_filename = filename.get()
             window.destroy()
             # sets new active ledger and calls create function
-            active_ledger = create_ledger(new_filename, ledgers)
-            print("'" + active_ledger.name + "' selected as active ledger")
+            new_ledger = create_ledger(new_filename, ledger_data.ledgers)
+            ledger_data.ledgers.append(new_ledger)  # updates ledger list to include new ledger
+            ledger_data.update(new_filename)   # updates to active ledger on creation
         new_ledger_entry = tk.Entry(window, textvariable=filename).pack()
         submit_bt = tk.Button(
             window,
@@ -51,24 +67,21 @@ class SelectLedgerWindow():
             window.destroy()
             # active_ledger = ledgers(name=filename)
             # print (filename.get())
-            for ledger in ledgers:
-                if filename.get() == ledger.name:
-                    active_ledger = ledger
-                    break
-            print("'" + active_ledger.name + "' selected as active ledger")
+            active_ledger = filename.get()
+            ledger_data.update(active_ledger)
 
         # set up window objects 
         try:
-            if len(ledgers) < 1:
-                raise NoLedgersError
+            if len(ledger_data.ledgers) < 1:
+                raise MissingLedgersError
             else:
-                om = tk.OptionMenu(window, filename, *ledgers).pack()
+                om = tk.OptionMenu(window, filename, *ledger_data.ledgers).pack()
                 submit_bt = tk.Button(
                     window,
                     text = "Submit",
                     command= lambda: submit(filename)
                 ).pack()
-        except NoLedgersError:
+        except MissingLedgersError:
             # if no ledger found, goes straight to create new ledger
             window.destroy()
             CreateLedgerWindow()
@@ -76,28 +89,37 @@ class SelectLedgerWindow():
 
 
 class ApplicationWindow():
-    def __init__(self, master=None):
-        root = tk.Tk()              # initialize root window
+    def __init__(self, root):
         root.geometry("400x300")    # sets window size
         root.title("Budgeting Manager")
+
         # Upload CSV to ledger button
+        def upload_button_command():
+            '''includes try/except block to check for no ledger selected'''
+            # gets active ledger
+            active_ledger = ledger_data.return_ledger()
+            try:
+                active_ledger.upload_csv()
+            except AttributeError:
+                print("No active ledger selected, please select an active ledger")
         upload_button = tk.Button(
             root,
             text = "Upload CSV",
-            command = lambda: active_ledger.upload_csv
+            command = upload_button_command
         ).pack()
-        # Change Ledger button
+
+        # Change ledger button
         ledger_button = tk.Button(
             root,
             text = "Select Ledger",
             command = SelectLedgerWindow
         ).pack()
-        # run mainloop
-        root.mainloop()
 
 
 def main():
-    app = ApplicationWindow()
+    root = tk.Tk()
+    app = ApplicationWindow(root)
+    root.mainloop()
 
 if __name__ == "__main__":
     main()
