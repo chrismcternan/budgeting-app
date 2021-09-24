@@ -1,15 +1,15 @@
 from tkinter import filedialog
 import pandas as pd
+from pandas.errors import EmptyDataError
 import os
 
 
 # Set up ledgers directory
-dir_name = "data\\ledgers"
 parent_dir = os.getcwd()
-ledger_dir = os.path.join(parent_dir, dir_name)
+ledger_dir = os.path.join(parent_dir, "data\\ledgers")
 if not os.path.isdir(ledger_dir):
     os.mkdir(ledger_dir) # create folder if non exists
-
+account_dir = os.path.join(parent_dir, "data")
 
 # Define error classes
 class Error(Exception):
@@ -21,13 +21,43 @@ class InvalidCharacterError(Error):
     # Raised when input string contains invalid Windows character
     pass
 
+# access accounts.csv to create accounts_df
+# accounts_df stores data on credit cards for easy upload
+def init_accounts():
+    acct_file_path = os.path.join(account_dir, "accounts.csv")
+    acct_columns = ["Account Name", "Account Type", "Card No"]
+    # creates new account.csv file if none exists
+    if not os.path.exists(acct_file_path):
+        accounts_df = pd.DataFrame(columns=acct_columns)
+        accounts_df.to_csv(acct_file_path)
+        print ("New 'accounts.csv' file created")
+        return accounts_df
+    else:
+        with open(acct_file_path) as f:
+            accounts_df = pd.read_csv(f, header=0, index_col=0)
+        print ("Accounts data imported from 'accounts.csv'")
+        return accounts_df
+
+# initialize accounts
+accounts_df = init_accounts()
+
+def save_accounts(accounts_df):
+    acct_file_path = os.path.join(account_dir, "accounts.csv")
+    accounts_df.to_csv(acct_file_path)
+    print ("'Accounts.csv' updated!")
+
+def get_account_index(accounts_df, account_name):
+    for index, name in accounts_df["Account Name"].iteritems():
+        if name == account_name:
+            return index
+
 
 # define methods for manipulating and loading ledger data
 class TransactionDatabase():
     cleaned_header = [
         "Account Name",
         "Account Type",
-        "Credit Card No",
+        "Card No",
         "Transaction Date",
         "Posted Date",
         "Description",
@@ -42,15 +72,17 @@ class TransactionDatabase():
 
     def download(self, *args, **kwargs):
         # download data to dataframe
-        # don't know if this will be useful
-        print(self.ledger_df.head(5))
+        with open(os.path.join(ledger_dir, self.name)) as f:
+            df = pd.read_csv(f, index_col=0, header=0)
+        self.ledger_df = self.ledger_df.append(df)
 
     def save(self, *args, **kwargs):
         # save dataframe to a csv file under ledger.name
         path = os.path.join(ledger_dir, self.name)
         self.ledger_df.to_csv(path)
 
-    def upload_csv(self, *args, **kwargs):
+    def upload_csv(self, account_index, *args, **kwargs):
+        self.download()
         file_name = filedialog.askopenfilename()
         print("Uploading: " + file_name)
 
@@ -58,6 +90,11 @@ class TransactionDatabase():
             upload_df = pd.read_csv(f, header=0)
         """parse data to match headers so it can be merged with csv
         with different formatting"""
+        # adds account data to df
+        accounts_df = init_accounts()
+        upload_df['Account Name'] = accounts_df.iloc[account_index]["Account Name"]
+        upload_df['Account Type'] = accounts_df.iloc[account_index]["Account Type"]
+        upload_df['Card No'] = accounts_df.iloc[account_index]["Card No"]
         # cleans amount charged
         if "Amount" not in upload_df.columns:
             # if no amount column, create new column
@@ -68,18 +105,24 @@ class TransactionDatabase():
             upload_df["Amount"] = new_amount
             print (upload_df.head(5))
         # changes 'category' to 'MCC' for clearer ledger columns
-        upload_df.rename(columns={"Category": "MCC"})
+        upload_df = upload_df.rename(columns={"Category": "MCC"})
         # either set credit card account or allow entry
-        # cleans unused columns
 
         # Merge cleaned data with ledger_df
         for col in upload_df.columns:
             if col in self.cleaned_header:
+                # cleans unused columns
                 self.ledger_df[col] = upload_df[col]
         self.save()
 
     def __init__(self, name):
         self.name = name
+        try:
+            with open(os.path.join(ledger_dir, name)) as f:
+                df = pd.read_csv(f, index_col=0, header=0)
+            self.ledger_df = self.ledger_df.append(df)
+        except EmptyDataError:
+            pass
         print("Ledger '" + name + "' initialized.")
 
     def __str__(self):
@@ -120,6 +163,7 @@ def select_ledger():
 
     with open(file_name) as f:
         df = pd.read_csv(f, header=0)
+
 
 def main():
     pass

@@ -5,3 +5,4 @@ __pycache__
 
 # Ledger files saved here (don't upload!!)
 ledgers/
+data/
