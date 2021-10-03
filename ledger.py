@@ -7,6 +7,7 @@ import os
 # Set up ledgers directory
 parent_dir = os.getcwd()
 ledger_dir = os.path.join(parent_dir, "data\\ledgers")
+ledger_filepath = os.path.join(ledger_dir, "transaction_database.csv")
 if not os.path.isdir(ledger_dir):
     os.mkdir(ledger_dir) # create folder if non exists
 account_dir = os.path.join(parent_dir, "data")
@@ -20,6 +21,7 @@ class Error(Exception):
 class InvalidCharacterError(Error):
     # Raised when input string contains invalid Windows character
     pass
+
 
 # access accounts.csv to create accounts_df
 # accounts_df stores data on credit cards for easy upload
@@ -54,7 +56,7 @@ def get_account_index(accounts_df, account_name):
 
 # define methods for manipulating and loading ledger data
 class TransactionDatabase():
-    cleaned_header = [
+    ledger_cols = [
         "Account Name",
         "Account Type",
         "Card No",
@@ -68,21 +70,18 @@ class TransactionDatabase():
         "Cashback Reward",
         "Notes"
     ]
-    ledger_df = pd.DataFrame(columns=cleaned_header)
-
-    def download(self, *args, **kwargs):
+    def download(self, ledger_df, *args, **kwargs):
         # download data to dataframe
-        with open(os.path.join(ledger_dir, self.name)) as f:
+        with open(ledger_filepath) as f:
             df = pd.read_csv(f, index_col=0, header=0)
-        self.ledger_df = self.ledger_df.append(df)
+        ledger_df = ledger_df.append(df)
 
     def save(self, *args, **kwargs):
         # save dataframe to a csv file under ledger.name
-        path = os.path.join(ledger_dir, self.name)
-        self.ledger_df.to_csv(path)
+        self.ledger_df.to_csv(ledger_filepath)
 
     def upload_csv(self, account_index, *args, **kwargs):
-        self.download()
+        self.download(self.ledger_df)
         file_name = filedialog.askopenfilename()
         print("Uploading: " + file_name)
 
@@ -110,70 +109,39 @@ class TransactionDatabase():
 
         # Merge cleaned data with ledger_df
         for col in upload_df.columns:
-            if col in self.cleaned_header:
+            if col in self.ledger_cols:
                 # cleans unused columns
                 self.ledger_df[col] = upload_df[col]
         self.save()
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
+        self.ledger_cols = [
+            "Account Name",
+            "Account Type",
+            "Card No",
+            "Transaction Date",
+            "Posted Date",
+            "Description",
+            "Category",
+            "Sub-category",
+            "Amount",
+            "MCC",
+            "Cashback Reward",
+            "Notes"
+        ]
         try:
-            with open(os.path.join(ledger_dir, name)) as f:
-                df = pd.read_csv(f, index_col=0, header=0)
-            self.ledger_df = self.ledger_df.append(df)
+            self.ledger_df = pd.DataFrame(columns=self.ledger_cols)
+            self.download(self.ledger_df)
         except EmptyDataError:
             pass
-        print("Ledger '" + name + "' initialized.")
-
-    def __str__(self):
-        return self.name    # set name of objects, don't think it does anything
-
-def init_ledgers():
-    '''defines functions to initialize ledgers based on found files'''
-    ledgers = []
-    active_ledger = None
-    for file in os.listdir(ledger_dir):
-        ledgers.append(TransactionDatabase(name = file))
-    return ledgers
-
-def create_ledger(filename, ledgers):
-    """create new object of class Transaction Database with 
-    filename defined from tkinter window"""
-    
-    invalid_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*', '.']
-    valid_name = True
-    try:
-        for char in filename:
-            if char in invalid_chars:
-                raise InvalidCharacterError
-    except InvalidCharacterError:
-        print ("Error: Selected file name contains invalid character.")
-        valid_name = False
-    if valid_name == True:
-        filename = filename + ".csv"
-        filepath = os.path.join(ledger_dir, filename)
-        with open(filepath, 'w+') as fp:
-            pass
-        return TransactionDatabase(name = filename)
-
-def select_ledger():
-    '''no longer being used'''
-    file_name = filedialog.askopenfilename()
-    # Check if valid file then create dataframe of data
-
-    with open(file_name) as f:
-        df = pd.read_csv(f, header=0)
+        except FileNotFoundError:
+            self.ledger_df = pd.DataFrame(columns=self.ledger_cols)
+            self.ledger_df.to_csv(ledger_filepath)
+        print("Ledger initialized.")
 
 
 def main():
     pass
-    # ledgers = init_ledgers()
-    # for ledger in ledgers:
-    #     ledger.upload_csv()
-    #     ledger.save()
-    #     # print (ledger)
-    #     # ledger.download()
-    #     break
 
 if __name__ == "__main__":
     main()
