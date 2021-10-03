@@ -12,6 +12,22 @@ if not os.path.isdir(ledger_dir):
     os.mkdir(ledger_dir) # create folder if non exists
 account_dir = os.path.join(parent_dir, "data")
 
+# Initialize ledger variables
+ledger_cols = [
+    "Account Name",
+    "Account Type",
+    "Card No",
+    "Transaction Date",
+    "Posted Date",
+    "Description",
+    "Category",
+    "Sub-category",
+    "Amount",
+    "MCC",
+    "Cashback Reward",
+    "Notes"
+]
+
 # Define error classes
 class Error(Exception):
     # Base class for errors
@@ -56,20 +72,6 @@ def get_account_index(accounts_df, account_name):
 
 # define methods for manipulating and loading ledger data
 class TransactionDatabase():
-    ledger_cols = [
-        "Account Name",
-        "Account Type",
-        "Card No",
-        "Transaction Date",
-        "Posted Date",
-        "Description",
-        "Category",
-        "Sub-category",
-        "Amount",
-        "MCC",
-        "Cashback Reward",
-        "Notes"
-    ]
     def download(self, ledger_df, *args, **kwargs):
         # download data to dataframe
         with open(ledger_filepath) as f:
@@ -114,21 +116,8 @@ class TransactionDatabase():
                 self.ledger_df[col] = upload_df[col]
         self.save()
 
-    def __init__(self):
-        self.ledger_cols = [
-            "Account Name",
-            "Account Type",
-            "Card No",
-            "Transaction Date",
-            "Posted Date",
-            "Description",
-            "Category",
-            "Sub-category",
-            "Amount",
-            "MCC",
-            "Cashback Reward",
-            "Notes"
-        ]
+    def __init__(self, ledger_cols):
+        self.ledger_cols = ledger_cols
         try:
             self.ledger_df = pd.DataFrame(columns=self.ledger_cols)
             self.download(self.ledger_df)

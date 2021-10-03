@@ -9,7 +9,7 @@ from ledger import *
 
 
 # Initialize Transaction Database
-ledger_db = TransactionDatabase()
+ledger_db = TransactionDatabase(ledger_cols=ledger_cols)
 
 
 class AccountEntry():
