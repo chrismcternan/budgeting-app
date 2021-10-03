@@ -104,7 +104,6 @@ class TransactionDatabase():
             upload_df['Debit'] = upload_df.fillna(0)['Debit']
             new_amount = upload_df["Credit"] - upload_df["Debit"]
             upload_df["Amount"] = new_amount
-            print (upload_df.head(5))
         # changes 'category' to 'MCC' for clearer ledger columns
         upload_df = upload_df.rename(columns={"Category": "MCC"})
         # either set credit card account or allow entry
