@@ -6,6 +6,10 @@ GUI.py          ->  operates main loop and manages
 ledger.py       -> manages ledgers and uploads CSVs
                 -> 
 
+How to run:
+1. Install python virtual environment
+2. Run python main.py to load GUI
+
 TO-DO:
 
 1. fix problem where ledger overwrites itself
