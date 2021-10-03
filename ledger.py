@@ -77,13 +77,13 @@ class TransactionDatabase():
         with open(ledger_filepath) as f:
             df = pd.read_csv(f, index_col=0, header=0)
         ledger_df = ledger_df.append(df)
+        print ('Ledger data has been downloaded')
 
     def save(self, *args, **kwargs):
-        # save dataframe to a csv file under ledger.name
+        # save dataframe to a csv file under ledger filepath
         self.ledger_df.to_csv(ledger_filepath)
 
     def upload_csv(self, account_index, *args, **kwargs):
-        self.download(self.ledger_df)
         file_name = filedialog.askopenfilename()
         print("Uploading: " + file_name)
 
@@ -108,11 +108,21 @@ class TransactionDatabase():
         upload_df = upload_df.rename(columns={"Category": "MCC"})
         # either set credit card account or allow entry
 
-        # Merge cleaned data with ledger_df
+        # change "Post Date" to "Posted Date"
+        if "Post Date" in upload_df.columns:
+            upload_df["Posted Date"] = upload_df["Post Date"]
+
+        # Cleans upload data for merge
+        for col in self.ledger_cols:
+            if col not in upload_df.columns:
+                # adds missing columns
+                upload_df[col] = None
         for col in upload_df.columns:
-            if col in self.ledger_cols:
-                # cleans unused columns
-                self.ledger_df[col] = upload_df[col]
+            if col not in self.ledger_cols:
+                # removes unuseds columns
+                upload_df = upload_df.drop(columns=col)
+        # appends to ledger dataframe
+        self.ledger_df = self.ledger_df.append(upload_df, ignore_index=True)
         self.save()
 
     def __init__(self, ledger_cols):
